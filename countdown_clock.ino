@@ -1,7 +1,6 @@
 
-const float motorStepAngle = 0.1125;
+
 const int stepsPerRevolution = 3200;
-const int stepsPerSecond = 54;
 const int dirPin = 9; //direction of the motor
 const int stepPin = 8; //speed 
 const int limitSwitchPin = 2;
@@ -9,12 +8,17 @@ const int startButtonPin = 3;
 const int resetButtonPin = 4;
 const int buzzerPin = 5;
 
-const int maxSpeedLimit = 200;
+
+
+
 long currentStep = 0;
 int state = 0; // 0 not started yet, 1  started, 3 finished
 int second = 0;
+int oldSecond =0;
 
 
+const int CW = 1;
+const int CCW = 0;
 
 const int LED_1 = 20;  //Led second 1 
 const int LED_2 = 21;  //Led second 2 
@@ -52,7 +56,7 @@ int lights[]  = { LED_1, LED_2, LED_3, LED_4, LED_5, LED_6, LED_7, LED_8, LED_9,
 void setup() {
 
   
-
+  
   
   pinMode(limitSwitchPin, INPUT_PULLUP);
   pinMode(startButtonPin, INPUT_PULLUP);
@@ -94,26 +98,30 @@ void setup() {
   clearLights();
   digitalWrite(buzzerPin, LOW);
   Serial.begin(115200); // Initialize Serial communication
+  
 
    Serial.println("Starting motor in reverse CCW...");
   // Start the motor in reverse CCW until it hits the limit switch
   while (digitalRead(resetButtonPin) == HIGH) {
    
   }
+
  
   while (digitalRead(limitSwitchPin) == HIGH) {
     delay(10);
-    step(1, 0, 0.95);
+    step(1, CCW, 1);
   }
   stopMotor();
   Serial.println("Limit switch hit.");
 
   // Stop the motor and wait for the start button
   Serial.println("Waiting for start button...");
+ 
 }
 
+  
 
-
+int sec;
 
 void loop() {
   //waiting for START
@@ -121,20 +129,31 @@ void loop() {
   if (state == 0) {
       if (digitalRead(startButtonPin) == LOW) {
           state=1;
+          oldSecond=0;
           Serial.println("START!");     
       }
   }
   //running
   if (state == 1) {
-      if (currentStep <= ((stepsPerRevolution/2) + stepsPerSecond)) {
+      if (currentStep <= (stepsPerRevolution/2)) {
           
-          step(1, 1, 0.94);
-          delay(17);
-          if (((currentStep) % stepsPerSecond) == 0 ){
-            if (currentStep){
+          step(1, CW, 1);
+          delay(16);
+          delayMicroseconds(600);
+          second =  map(currentStep, 0, stepsPerRevolution/2, 0, 30);
+          if (oldSecond != second ){
+            oldSecond = second;
+            
+        
+            Serial.print(" second: ");
+            Serial.print(second);
+            Serial.print(" curr step: ");
+            Serial.print(currentStep);
+            Serial.print(", milliseconds elapsed: ");
+            Serial.println(millis());
+            if (second){
               showLeds(second);
               shortBeep();
-              second ++;
             }  
           }
           currentStep++;
@@ -162,7 +181,7 @@ void loop() {
          second=0;
          restart();
          state =0;
-      }
+    }
     
   }   
 }
@@ -173,8 +192,12 @@ void showLeds(int numLeds) {
 }
 
 void restart(){
-  step((stepsPerRevolution/2) + stepsPerSecond, 0, 5);
+  Serial.print("Starting return: ");
+  Serial.println(millis());
+  step((stepsPerRevolution/2), CCW, 5);
   stopMotor();
+  Serial.print("Returned: ");
+  Serial.println(millis());
   longBeep();
 }
 
@@ -223,31 +246,20 @@ void stopMotor(){
   digitalWrite(stepPin, HIGH);
 }
 
-void step(int numStep, int dir, float motorSpeed){
-    
+void step(int numStep, int dir, int addDelay){
+
       digitalWrite(dirPin, dir); // set direction attribute
       
-      //float pulseSpeed = rpm2PulseSpeed(motorSpeed);  // [steps/sec]
-
-      //float secPerStep = (1/pulseSpeed); 
-      //float msPerStep = secPerStep* 1000; 
       for (int x = 0; x < numStep; x++)
       {
         digitalWrite(stepPin, dir); 
-        //delay(msPerStep/2)
-        delay(1); 
+        delay(addDelay);
         digitalWrite(stepPin,!dir); 
-        //delay(msPerStep/2);
-        delay(1);
+        delay(addDelay);
       }
 
 }
 
-float rpm2PulseSpeed(float rpm){
-    float pulseSpeed = (6*rpm)/motorStepAngle;
-    return pulseSpeed;
-}
- 
 
 void clearLights(){
   for (byte i = 0; i < 30; i = i + 1) { 
