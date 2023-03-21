@@ -99,7 +99,6 @@ void setup() {
   digitalWrite(buzzerPin, LOW);
   Serial.begin(115200); // Initialize Serial communication
   
-
    Serial.println("Starting motor in reverse CCW...");
   // Start the motor in reverse CCW until it hits the limit switch
   while (digitalRead(resetButtonPin) == HIGH) {
@@ -116,7 +115,6 @@ void setup() {
 
   // Stop the motor and wait for the start button
   Serial.println("Waiting for start button...");
- 
 }
 
   
@@ -152,7 +150,7 @@ void loop() {
             Serial.print(", milliseconds elapsed: ");
             Serial.println(millis());
             if (second){
-              showLeds(second);
+              showLeds(second-1);
               shortBeep();
             }  
           }
